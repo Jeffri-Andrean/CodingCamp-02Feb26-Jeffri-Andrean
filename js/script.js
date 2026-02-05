@@ -1,122 +1,125 @@
-// Seleksi elemen DOM
 const taskInput = document.getElementById('taskInput');
 const dateInput = document.getElementById('dateInput');
 const addBtn = document.getElementById('addBtn');
 const taskList = document.getElementById('taskList');
-const deleteAllBtn = document.getElementById('deleteAllBtn');
 const filterSelect = document.getElementById('filterSelect');
+const deleteAllBtn = document.getElementById('deleteAllBtn');
 
 // Event Listeners
+document.addEventListener('DOMContentLoaded', loadTasks); // Load data saat web dibuka
 addBtn.addEventListener('click', addTask);
-deleteAllBtn.addEventListener('click', deleteAllTasks);
 filterSelect.addEventListener('change', filterTasks);
+deleteAllBtn.addEventListener('click', () => {
+    if(confirm('Hapus semua tugas?')) {
+        taskList.innerHTML = '';
+        saveLocalTasks(); // Update penyimpanan setelah dihapus semua
+    }
+});
 
-// Fungsi Menambah Tugas
 function addTask() {
     const taskValue = taskInput.value;
     const dateValue = dateInput.value;
 
-    // 1. Validate Input Form (Sesuai instruksi)
     if (taskValue === '' || dateValue === '') {
-        alert("Please fill in both the task and the due date!");
+        alert("Harap isi nama tugas dan tanggalnya!");
         return;
     }
 
-    // Hapus pesan "No Task Found" jika ada
-    const emptyMsg = document.querySelector('.empty-message');
-    if (emptyMsg) {
-        emptyMsg.remove();
-    }
-
-    // Membuat elemen list item baru
-    const li = document.createElement('li');
-    li.className = 'task-item';
+    // Panggil fungsi pembuat elemen
+    createTaskElement(taskValue, dateValue, false);
     
-    // Isi HTML di dalam li
-    li.innerHTML = `
-        <span>${taskValue}</span>
-        <span>${dateValue}</span>
-        <span class="status-badge status-pending">Pending</span>
-        <div>
-            <button class="action-btn complete-btn"><i class="fas fa-check"></i></button>
-            <button class="action-btn delete-btn"><i class="fas fa-trash"></i></button>
-        </div>
-    `;
-
-    // Menambahkan fungsionalitas tombol di dalam item baru (Complete & Delete)
-    const completeBtn = li.querySelector('.complete-btn');
-    const deleteBtn = li.querySelector('.delete-btn');
-    const statusBadge = li.querySelector('.status-badge');
-
-    // Logic Tombol Selesai (Complete)
-    completeBtn.addEventListener('click', function() {
-        li.classList.toggle('completed');
-        if (li.classList.contains('completed')) {
-            statusBadge.textContent = "Completed";
-            statusBadge.classList.replace('status-pending', 'status-completed');
-        } else {
-            statusBadge.textContent = "Pending";
-            statusBadge.classList.replace('status-completed', 'status-pending');
-        }
-        filterTasks(); // Refresh filter saat status berubah
-    });
-
-    // Logic Tombol Hapus (Delete per item)
-    deleteBtn.addEventListener('click', function() {
-        li.remove();
-        checkEmpty();
-    });
-
-    // Masukkan ke dalam list
-    taskList.appendChild(li);
-
-    // Reset input
+    // Simpan ke Local Storage
+    saveLocalTasks();
+    
+    // Reset Input
     taskInput.value = '';
     dateInput.value = '';
 }
 
-// Fungsi Menghapus Semua Tugas
-function deleteAllTasks() {
-    // Konfirmasi sederhana agar tidak sengaja terhapus
-    if(confirm("Are you sure you want to delete all tasks?")) {
-        taskList.innerHTML = '<li class="empty-message">No Task Found!</li>';
+// Fungsi untuk membuat HTML Task (Dipisah agar bisa dipakai saat Load data juga)
+function createTaskElement(taskValue, dateValue, isCompleted) {
+    const li = document.createElement('li');
+    li.classList.add('task-item');
+    if (isCompleted) {
+        li.classList.add('completed');
     }
+
+    li.innerHTML = `
+        <span class="task-text ${isCompleted ? 'completed-text' : ''}">${taskValue}</span>
+        <span class="task-date">${dateValue}</span>
+        <span class="status">${isCompleted ? 'Completed' : 'Pending'}</span>
+        <div>
+            <button class="action-btn check-btn"><i class="fas fa-check"></i></button>
+            <button class="action-btn trash-btn"><i class="fas fa-trash"></i></button>
+        </div>
+    `;
+
+    // Logic tombol check
+    li.querySelector('.check-btn').addEventListener('click', () => {
+        li.classList.toggle('completed');
+        const statusSpan = li.querySelector('.status');
+        const textSpan = li.querySelector('.task-text');
+        
+        if (li.classList.contains('completed')) {
+            statusSpan.textContent = "Completed";
+            textSpan.classList.add('completed-text');
+        } else {
+            statusSpan.textContent = "Pending";
+            textSpan.classList.remove('completed-text');
+        }
+        filterTasks();
+        saveLocalTasks(); // Simpan perubahan status
+    });
+
+    // Logic tombol trash
+    li.querySelector('.trash-btn').addEventListener('click', () => {
+        li.remove();
+        saveLocalTasks(); // Simpan perubahan setelah dihapus
+    });
+
+    taskList.appendChild(li);
 }
 
-// Fungsi Cek Apakah List Kosong
-function checkEmpty() {
-    if (taskList.children.length === 0) {
-        taskList.innerHTML = '<li class="empty-message">No Task Found!</li>';
-    }
+// FUNGSI SIMPAN KE LOCAL STORAGE
+function saveLocalTasks() {
+    const tasks = [];
+    const taskItems = taskList.querySelectorAll('.task-item');
+
+    taskItems.forEach(function(item) {
+        tasks.push({
+            text: item.querySelector('.task-text').innerText,
+            date: item.querySelector('.task-date').innerText,
+            completed: item.classList.contains('completed')
+        });
+    });
+
+    localStorage.setItem('todos', JSON.stringify(tasks));
 }
 
-// Fungsi Filter (All, Completed, Pending)
+// FUNGSI LOAD DARI LOCAL STORAGE
+function loadTasks() {
+    const tasks = JSON.parse(localStorage.getItem('todos')) || [];
+    
+    tasks.forEach(function(task) {
+        createTaskElement(task.text, task.date, task.completed);
+    });
+}
+
 function filterTasks() {
-    const todos = taskList.childNodes;
-    const filterValue = filterSelect.value;
-
-    todos.forEach(function(todo) {
-        // Skip jika itu adalah pesan "No Task Found"
-        if (todo.classList && todo.classList.contains('empty-message')) return;
-
-        if (todo.nodeType === 1) { // Pastikan elemen HTML
-            switch(filterValue) {
+    const tasks = taskList.childNodes;
+    tasks.forEach(task => {
+        if (task.nodeType === 1) { 
+            switch (filterSelect.value) {
                 case "all":
-                    todo.style.display = "grid";
+                    task.style.display = "grid";
                     break;
                 case "completed":
-                    if (todo.classList.contains('completed')) {
-                        todo.style.display = "grid";
-                    } else {
-                        todo.style.display = "none";
-                    }
+                    if (task.classList.contains('completed')) task.style.display = "grid";
+                    else task.style.display = "none";
                     break;
                 case "pending":
-                    if (!todo.classList.contains('completed')) {
-                        todo.style.display = "grid";
-                    } else {
-                        todo.style.display = "none";
-                    }
+                    if (!task.classList.contains('completed')) task.style.display = "grid";
+                    else task.style.display = "none";
                     break;
             }
         }

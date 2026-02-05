@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List App</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="container">
+        <div class="todo-app">
+            <h2>Todo List</h2>
+            
+            <div class="input-group">
+                <input type="text" id="taskInput" placeholder="Add a todo...">
+                <input type="date" id="dateInput">
+                <button id="addBtn"><i class="fas fa-plus"></i></button>
+            </div>
+
+            <div class="controls">
+                <div class="filter-dropdown">
+                    <select id="filterSelect">
+                        <option value="all">All</option>
+                        <option value="completed">Completed</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                </div>
+                <button id="deleteAllBtn">DELETE ALL</button>
+            </div>
+
+            <div class="task-header">
+                <span>TASK</span>
+                <span>DUE DATE</span>
+                <span>STATUS</span>
+                <span>ACTIONS</span>
+            </div>
+
+            <ul id="taskList" class="task-list">
+                <li class="empty-message">No Task Found!</li> 
+            </ul>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
